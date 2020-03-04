@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Jade Delight</title>
+
+<style>
+	#errors {
+		color: darkred;
+	}
+</style>
+</head>
+
+<body>
+
+<script language="javascript">
+
+function MenuItem(name, cost)
+{
+	this.name = name;
+	this.cost=cost;
+}
+
+menuItems = new Array(
+	new MenuItem("Chicken Chop Suey", 4.5),
+	new MenuItem("Sweet and Sour Pork", 6.25),
+	new MenuItem("Shrimp Lo Mein", 5.25),
+	new MenuItem("Moo Shi Chicken", 6.5),
+	new MenuItem("Fried Rice", 2.35)
+);
+
+function makeSelect(name, minRange, maxRange)
+{
+	var t= "";
+	t = "<select name='" + name + "' size='1' onchange='updateTotals()'>";
+	for (j=minRange; j<=maxRange; j++)
+	   t += "<option>" + j + "</option>";
+	t+= "</select>"; 
+	return t;
+}
+
+// updateCost updates the "Total Cost" field of an Item when its quantity has been changed.
+function updateCost()
+{
+	//extract row index, regex for ending digits of the name of the select element
+	var index  = parseInt(event.target.name.replace( /^\D+/g, ''));
+
+	//get quantity from select menu and corresponding unit price
+	var quantity = event.target.value;
+	var unitPrice = menuItems[index].cost;
+
+	//calculate Total Cost of menu item and display in corresponding cost field
+	var itemTotalCost = (quantity * unitPrice).toFixed(2);
+
+	var costFields = document.getElementsByName("cost");
+	costFields[index].value = itemTotalCost;
+}
+
+// updateTotals is triggered whenever a quantity under "Select Item" is changed.
+function updateTotals()
+{
+	updateCost();
+
+	// Calculate new subtotal from all updated Total Cost fields
+	var costFields = document.getElementsByName("cost");
+
+	var new_subtotal = 0;
+	var cost_at_index = 0;
+	for (p = 0; p < costFields.length; p++)
+	{
+		cost_at_index = parseFloat(costFields[p].value);
+		new_subtotal += cost_at_index;
+	}
+	document.getElementById("subtotal").value = new_subtotal.toFixed(2);
+
+	// Calculate Mass Tax
+	var mass_tax = .0625 * new_subtotal;
+	document.getElementById("tax").value = mass_tax.toFixed(2);
+
+	// Calculate final Total
+	var final_total = mass_tax + new_subtotal;
+	document.getElementById("total").value = final_total.toFixed(2);
+}
+
+//confirmOrder is triggered by clicking the Submit button
+function confirmOrder()
+{
+	//Refresh error div to blank to reflect most recent submission
+	document.getElementById("errors").innerHTML = "";
+
+	// Report errors if lname and phone are valid
+	var goodLname = verifyLname();
+	var goodPhone = verifyPhone();
+
+	var goodAddress = true; //only can be false if delivery is checked
+	var time = "0";
+	if(document.getElementById('delivery').checked) {
+		goodAddress = verifyAddress();
+		time = calcTime(30);
+	}
+	else {
+		time = calcTime(15);
+	}
+
+	if (goodLname && goodPhone && goodAddress) {
+		document.getElementById('confirmation').innerHTML = "<p>Thank you for ordering from Jade Delight!</p><p>Your order will be ready for pickup or delivered by " + time + ".</p>";
+		document.getElementById('confirmation').innerHTML += "<p>Your order costs $" + document.getElementById('total').value + ".</p>";
+	}
+}
+
+//Given the wait time (30 or 15 minutes), calculate when the user can expect their food to be ready.
+function calcTime(wait_time)
+{
+	var today = new Date();
+	hours = today.getHours();
+	minutes = today.getMinutes();
+
+	minutes += wait_time;
+	if (minutes >= 60) {
+		minutes = minutes - 60;
+		hours++;
+	}
+	if (hours >= 24) {
+		hours -= 24;
+	}
+	time = hours + ":" + minutes.toPrecision(2);
+	return time;
+}
+
+function verifyLname()
+{
+	var lname_input = document.getElementById('lname').value;
+	if (lname_input == "") {
+		document.getElementById("errors").innerHTML += "<br>Please enter a last name.";
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
+function verifyPhone()
+{
+	var phone_input = document.getElementById('phone').value;
+	var format = /^\(?([0-9]{3})\)?[-]?([0-9]{3})[-]?([0-9]{4})$/;
+	if(phone_input.match(format)) {
+		return true;
+	}
+	else {
+		document.getElementById("errors").innerHTML += "<br>Please enter a phone number with the format XXXXXXXXXX, any symbols are allowed in between.";
+		return false;
+	}
+}
+
+function verifyAddress()
+{
+	var street_input = document.getElementById('street').value;
+	var city_input = document.getElementById('city').value;
+	if (street_input == "" || city_input == "") {
+		document.getElementById("errors").innerHTML += "<br>Please enter a street and city for your address.";
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
+
+</script>
+
+
+<h1>Jade Delight</h1>
+<form>
+
+<p>First Name: <input type="text"  name='fname' id='fname'/></p>
+<p>Last Name*:  <input type="text"  name='lname' id='lname'/></p>
+<p>Street: <input type="text"  name='street' id='street'/></p>
+<p>City: <input type="text"  name='city' id='city'/></p>
+<p>Phone*: <input type="text"  name='phone' id="phone"/></p>
+<p> 
+	<input type="radio"  name="p_or_d" id="pickup" value = "pickup" checked="checked"/>Pickup  
+	<input type="radio"  name='p_or_d' id="delivery" value = 'delivery'/>
+	Delivery
+</p>
+
+<!-- create table and headers-->
+<table border="0" cellpadding="3" id="itemOrders">
+  <tr>
+    <th>Select Item</th>
+    <th>Item Name</th>
+    <th>Cost Each</th>
+    <th>Total Cost</th>
+  </tr>
+
+<script language="javascript">
+
+//DON'T EDIT BELOW HERE
+  var s = "";
+  for (i=0; i< menuItems.length; i++)
+  {
+	  s += "<tr><td>";
+	  s += makeSelect("quan" + i, 0, 10);
+	  s += "</td><td>" + menuItems[i].name + "</td>";
+	  s += "<td> $ " + menuItems[i].cost.toFixed(2) + "</td>";
+	  s += "<td>$<input type='text' name='cost' value='0.00' /></td></tr>";
+  }
+  document.writeln(s);
+// DON'T EDIT ABOVE HERE
+
+</script>
+</table>
+
+<p>Subtotal: 
+   $<input type="text"  name='subtotal' id="subtotal" />
+</p>
+<p>Mass tax 6.25%:
+  $ <input type="text"  name='tax' id="tax" />
+</p>
+<p>Total: $ <input type="text"  name='total' id="total" />
+</p>
+
+<input type = "button" value = "Submit Order" onclick = "confirmOrder()"/>
+
+</form>
+
+<div id="errors">
+</div>
+
+<div id="confirmation">
+</div>
+
+</body>
+</html>
